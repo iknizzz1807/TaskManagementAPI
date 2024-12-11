@@ -1,0 +1,14 @@
+services:
+  mongo_bp:
+    image: mongo:latest
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${BLUEPRINT_DB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${BLUEPRINT_DB_ROOT_PASSWORD}
+    ports:
+      - "${BLUEPRINT_DB_PORT}:27017"
+    volumes:
+      - mongo_volume_bp:/data/db
+
+volumes:
+  mongo_volume_bp:
