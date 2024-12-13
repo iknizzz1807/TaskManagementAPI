@@ -22,3 +22,24 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 		"tasks":  projects,
 	})
 }
+
+func CreateProject(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var project models.Project
+	if err := json.NewDecoder(r.Body).Decode(&project); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	if err := models.CreateProject(&project); err != nil {
+		http.Error(w, "Error creating project", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "success",
+		"project": project,
+	})
+}
