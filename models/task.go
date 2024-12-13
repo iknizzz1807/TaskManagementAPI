@@ -14,6 +14,7 @@ import (
 type Task struct {
 	ID          primitive.ObjectID  `bson:"_id,omitempty"`
 	ParentID    *primitive.ObjectID `bson:"parent_id,omitempty"` // Nil for main tasks, set for subtasks
+	ProjectID   primitive.ObjectID  `bson:"project_id"`
 	Name        string              `bson:"name"`
 	Description string              `bson:"description"`
 	Deadline    time.Time           `bson:"deadline"`
@@ -23,14 +24,14 @@ type Task struct {
 	UpdatedAt   time.Time           `bson:"updated_at"`
 }
 
-func (task *Task) Validate() error {
+func (task *Task) ValidateParentID() error {
 	if task.ParentID != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		// Check if the parent task exists and is a main task
+		// Check if the parent task exists or is a main task
 		var parentTask Task
-		err := utils.Db.Collection("tasks").FindOne(ctx, bson.M{"_id": task.ParentID, "parent_id": nil}).Decode(&parentTask)
+		err := utils.Db.Collection("tasks").FindOne(ctx, bson.M{"_id": task.ParentID}).Decode(&parentTask)
 		if err != nil {
 			return errors.New("invalid parent ID: parent task does not exist or is not a main task")
 		}
@@ -61,7 +62,7 @@ func CreateTask(task *Task) error {
 	defer cancel()
 
 	// Validate the ParentID
-	if err := task.Validate(); err != nil {
+	if err := task.ValidateParentID(); err != nil {
 		return err
 	}
 
@@ -70,5 +71,24 @@ func CreateTask(task *Task) error {
 	task.UpdatedAt = time.Now()
 
 	_, err := utils.Db.Collection("tasks").InsertOne(ctx, task)
+	return err
+}
+
+func DeleteTask(taskID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Delete the main task
+	result, err := utils.Db.Collection("tasks").DeleteOne(ctx, bson.M{"_id": taskID})
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return errors.New("task not found")
+	}
+
+	// Delete subtasks
+	_, err = utils.Db.Collection("tasks").DeleteMany(ctx, bson.M{"parent_id": taskID})
 	return err
 }

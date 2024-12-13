@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/iknizzz1807/TaskManagementAPI/utils"
@@ -52,9 +53,13 @@ func DeleteProject(projectID primitive.ObjectID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := utils.Db.Collection("projects").DeleteOne(ctx, bson.M{"_id": projectID})
+	result, err := utils.Db.Collection("projects").DeleteOne(ctx, bson.M{"_id": projectID})
 	if err != nil {
 		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return errors.New("project not found")
 	}
 
 	// Delete associated tasks
