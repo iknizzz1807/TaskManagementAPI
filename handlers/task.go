@@ -30,7 +30,8 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	// Change from string to objectID
 	var task struct {
 		models.Task
-		ParentIDStr string `json:"parent_id"`
+		ParentIDStr  string `json:"parent_id"`
+		ProjectIDStr string `json:"project_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
@@ -47,8 +48,24 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 		task.Task.ParentID = &parentID
 	}
 
+	if task.ProjectIDStr != "" {
+		projectID, err := primitive.ObjectIDFromHex(task.ProjectIDStr)
+		if err != nil {
+			http.Error(w, "Invalid project ID", http.StatusBadRequest)
+			return
+		}
+		task.Task.ProjectID = projectID
+	} else {
+		http.Error(w, "Project ID is required", http.StatusBadRequest)
+		return
+	}
+
 	if err := models.CreateTask(&task.Task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err.Error() == "internal error" {
+			http.Error(w, "Error creating task", http.StatusInternalServerError)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 		return
 	}
 

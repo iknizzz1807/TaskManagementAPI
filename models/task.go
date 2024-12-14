@@ -24,7 +24,26 @@ type Task struct {
 	UpdatedAt   time.Time           `bson:"updated_at"`
 }
 
-func (task *Task) ValidateParentID() error {
+func (task *Task) Validate() error {
+	if task.ProjectID.IsZero() {
+		return errors.New("project ID is required")
+	}
+	if task.Name == "" {
+		return errors.New("name is required")
+	}
+	if task.Description == "" {
+		return errors.New("description is required")
+	}
+	if task.Deadline.IsZero() {
+		return errors.New("deadline is required")
+	}
+	if task.Priority == "" {
+		return errors.New("priority is required")
+	}
+	if task.Status == "" {
+		return errors.New("status is required")
+	}
+
 	if task.ParentID != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -62,7 +81,7 @@ func CreateTask(task *Task) error {
 	defer cancel()
 
 	// Validate the ParentID
-	if err := task.ValidateParentID(); err != nil {
+	if err := task.Validate(); err != nil {
 		return err
 	}
 
@@ -71,7 +90,10 @@ func CreateTask(task *Task) error {
 	task.UpdatedAt = time.Now()
 
 	_, err := utils.Db.Collection("tasks").InsertOne(ctx, task)
-	return err
+	if err != nil {
+		return errors.New("internal error")
+	}
+	return nil
 }
 
 func DeleteTask(taskID primitive.ObjectID) error {

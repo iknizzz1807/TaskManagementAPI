@@ -34,7 +34,11 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := models.CreateProject(&project); err != nil {
-		http.Error(w, "Error creating project", http.StatusInternalServerError)
+		if err.Error() == "internal error" {
+			http.Error(w, "Error creating project", http.StatusInternalServerError)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 		return
 	}
 

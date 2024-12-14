@@ -19,6 +19,16 @@ type Project struct {
 	UpdatedAt   time.Time          `bson:"updated_at"`
 }
 
+func (project *Project) Validate() error {
+	if project.Name == "" {
+		return errors.New("name is required")
+	}
+	if project.Description == "" {
+		return errors.New("description is required")
+	}
+	return nil
+}
+
 func FetchProjects() ([]Project, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -41,12 +51,20 @@ func CreateProject(project *Project) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Validate project before inserting
+	if err := project.Validate(); err != nil {
+		return err
+	}
+
 	project.ID = primitive.NewObjectID()
 	project.CreatedAt = time.Now()
 	project.UpdatedAt = time.Now()
 
 	_, err := utils.Db.Collection("projects").InsertOne(ctx, project)
-	return err
+	if err != nil {
+		return errors.New("internal error")
+	}
+	return nil
 }
 
 func DeleteProject(projectID primitive.ObjectID) error {
