@@ -84,3 +84,32 @@ func DeleteProject(projectID primitive.ObjectID) error {
 	_, err = utils.Db.Collection("tasks").DeleteMany(ctx, bson.M{"project_id": projectID})
 	return err
 }
+
+func UpdateProject(projectID primitive.ObjectID, updatedProject *Project) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Validate the updated project
+	if err := updatedProject.Validate(); err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"name":        updatedProject.Name,
+			"description": updatedProject.Description,
+			"updated_at":  updatedProject.UpdatedAt,
+		},
+	}
+
+	result, err := utils.Db.Collection("projects").UpdateOne(ctx, bson.M{"_id": projectID}, update)
+	if err != nil {
+		return errors.New("internal error")
+	}
+
+	if result.MatchedCount == 0 {
+		return errors.New("project not found")
+	}
+
+	return nil
+}

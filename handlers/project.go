@@ -73,3 +73,42 @@ func DeleteProject(w http.ResponseWriter, r *http.Request) {
 		"status": "success",
 	})
 }
+
+func UpdateProject(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	projectIDStr := r.PathValue("id")
+	if projectIDStr == "" {
+		http.Error(w, "Missing project ID", http.StatusBadRequest)
+		return
+	}
+
+	projectID, err := primitive.ObjectIDFromHex(projectIDStr)
+	if err != nil {
+		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+		return
+	}
+
+	var project models.Project
+	if err := json.NewDecoder(r.Body).Decode(&project); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	if err := models.UpdateProject(projectID, &project); err != nil {
+		if err.Error() == "internal error" {
+			http.Error(w, "Error updating project", http.StatusInternalServerError)
+		} else if err.Error() == "project not found" {
+			http.Error(w, "Project not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "success",
+		"project": project,
+	})
+}
