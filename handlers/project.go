@@ -91,7 +91,7 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 func DeleteProject(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id := r.PathValue("projectID")
+	id := r.PathValue("id")
 	projectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		http.Error(w, "Invalid project ID", http.StatusBadRequest)
@@ -133,6 +133,7 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
+	project.ID = projectID
 
 	if err := models.UpdateProject(projectID, &project); err != nil {
 		if err.Error() == "internal error" {

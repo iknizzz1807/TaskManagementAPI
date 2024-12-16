@@ -155,6 +155,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	task.ID = taskID
 	if err := models.UpdateTask(taskID, &task.Task); err != nil {
 		if err.Error() == "internal error" {
 			http.Error(w, "Error updating task", http.StatusInternalServerError)
