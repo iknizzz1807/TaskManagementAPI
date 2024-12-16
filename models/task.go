@@ -101,6 +101,24 @@ func FetchTasks(name, status, priority string) ([]Task, error) {
 	return tasks, nil
 }
 
+func FetchTasksByProjectID(projectID primitive.ObjectID) ([]Task, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var tasks []Task
+	cursor, err := utils.Db.Collection("tasks").Find(ctx, bson.M{"project_id": projectID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if err := cursor.All(ctx, &tasks); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func CreateTask(task *Task) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

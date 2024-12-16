@@ -7,6 +7,7 @@ import (
 
 	"github.com/iknizzz1807/TaskManagementAPI/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -45,6 +46,22 @@ func FetchProjects() ([]Project, error) {
 	}
 
 	return projects, nil
+}
+
+func FetchProject(projectID primitive.ObjectID) (Project, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var project Project
+	err := utils.Db.Collection("projects").FindOne(ctx, bson.M{"_id": projectID}).Decode(&project)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Project{}, errors.New("project not found")
+		}
+		return Project{}, err
+	}
+
+	return project, nil
 }
 
 func CreateProject(project *Project) error {
