@@ -5,11 +5,13 @@ import (
 	"net/http"
 
 	"github.com/iknizzz1807/TaskManagementAPI/routes"
+
 	"github.com/iknizzz1807/TaskManagementAPI/utils"
 )
 
 func main() {
 	utils.ConnectDB()
+	utils.ConnectRedis()
 	routes.SetupRoutes()
 
 	log.Println("Server starting on PORT 8080...")
